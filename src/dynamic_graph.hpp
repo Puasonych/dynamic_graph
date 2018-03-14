@@ -4,286 +4,16 @@
 #include <cmath>
 #include <random>
 #include <tuple>
+#include <map>
 #include <algorithm>
 
 std::random_device rd;
 
 std::mt19937 mt(rd());
 
-namespace rbtree {
-    enum class node_color
-    {
-        red,
-        black
-    };
-
-    template <typename Key, typename Data>
-    struct node
-    {
-        explicit node(const Key & key, const Data & data)
-            : left(nullptr), right(nullptr), parent(nullptr)
-        {
-            info.first = key;
-            info.second = data;
-        }
-
-        std::pair<Key, Data> info;
-        node_color color;
-        node * left;
-        node * right;
-        node * parent;
-    };
-
-    template <typename Key, typename Data>
-    class tree
-    {
-    public:
-        tree()
-            : m_root(nullptr)
-        {
-        }
-
-        ~tree()
-        {
-            clear();
-        }
-
-        Data & operator[](const Key & key)
-        {
-            node<Key, Data> * search = find(key);
-
-            if (search)
-            {
-                return search->info.second;
-            }
-            else
-            {
-                const Data data{};
-                return push(key, data);
-            }
-        }
-
-        node<Key, Data> * find(const Key & key)
-        {
-            if (!m_root)
-            {
-                return nullptr;
-            }
-
-            return _find(m_root, key);
-        }
-
-        Data & push(const Key & key, const Data & data)
-        {
-            node<Key, Data> * ptr = new node<Key, Data>(key, data);
-
-            m_root = bst_insert(m_root, ptr);
-
-            if (ptr)
-            {
-                m_nodes.push_back(ptr);
-                fix_error(m_root, ptr);
-            }
-
-            return ptr->info.second;
-        }
-
-        void clear()
-        {
-            auto step = m_nodes.size();
-            while (!m_nodes.empty())
-            {
-                delete m_nodes[--step];
-                m_nodes.pop_back();
-            }
-
-            m_root = nullptr;
-        }
-
-        uint64_t size()
-        {
-            return m_nodes.size();
-        }
-
-        const std::vector< node<Key, Data> * > & items = m_nodes;
-
-    protected:
-        node<Key, Data> * _find(node<Key, Data> * root, const Key & key)
-        {
-            while (root)
-            {
-                if (root->info.first == key)
-                {
-                    return root;
-                }
-
-                if (key < root->info.first)
-                {
-                    root = root->left;
-                }
-                else
-                {
-                    root = root->right;
-                }
-            }
-
-            return nullptr;
-        }
-
-        void rotate_left(node<Key, Data> * & root, node<Key, Data> * & ptr)
-        {
-            node<Key, Data> * ptr_right = ptr->right;
-
-            ptr->right = ptr_right->left;
-
-            if (ptr->right)
-                ptr->right->parent = ptr;
-
-            ptr_right->parent = ptr->parent;
-
-            if (!ptr->parent)
-                root = ptr_right;
-
-            else if (ptr == ptr->parent->left)
-                ptr->parent->left = ptr_right;
-            else
-                ptr->parent->right = ptr_right;
-
-            ptr_right->left = ptr;
-            ptr->parent = ptr_right;
-        }
-
-        void rotate_right(node<Key, Data> * & root, node<Key, Data> * & ptr)
-        {
-            node<Key, Data> * ptr_left = ptr->left;
-
-            ptr->left = ptr_left->right;
-
-            if (ptr->left)
-                ptr->left->parent = ptr;
-
-            ptr_left->parent = ptr->parent;
-
-            if (!ptr->parent)
-                root = ptr_left;
-
-            else if (ptr == ptr->parent->left)
-                ptr->parent->left = ptr_left;
-
-            else
-                ptr->parent->right = ptr_left;
-
-            ptr_left->right = ptr;
-            ptr->parent = ptr_left;
-        }
-
-        void fix_error(node<Key, Data> * & root, node<Key, Data> * & ptr)
-        {
-            node<Key, Data> * parent_ptr = nullptr;
-            node<Key, Data> * grand_parent_ptr = nullptr;
-
-            while ((ptr != root) && (ptr->color != node_color::black) &&
-                (ptr->parent->color == node_color::red))
-            {
-
-                parent_ptr = ptr->parent;
-                grand_parent_ptr = ptr->parent->parent;
-
-                if (parent_ptr == grand_parent_ptr->left)
-                {
-
-                    node<Key, Data> * uncle_ptr = grand_parent_ptr->right;
-
-                    if (uncle_ptr && uncle_ptr->color == node_color::red)
-                    {
-                        grand_parent_ptr->color = node_color::red;
-                        parent_ptr->color = node_color::black;
-                        uncle_ptr->color = node_color::black;
-                        ptr = grand_parent_ptr;
-                    }
-
-                    else
-                    {
-                        if (ptr == parent_ptr->right)
-                        {
-                            rotate_left(root, parent_ptr);
-                            ptr = parent_ptr;
-                            parent_ptr = ptr->parent;
-                        }
-
-                        rotate_right(root, grand_parent_ptr);
-                        std::swap(parent_ptr->color, grand_parent_ptr->color);
-                        ptr = parent_ptr;
-                    }
-                }
-                else
-                {
-                    node<Key, Data>  *uncle_ptr = grand_parent_ptr->left;
-
-                    if (uncle_ptr && uncle_ptr->color == node_color::red)
-                    {
-                        grand_parent_ptr->color = node_color::red;
-                        parent_ptr->color = node_color::black;
-                        uncle_ptr->color = node_color::black;
-                        ptr = grand_parent_ptr;
-                    }
-                    else
-                    {
-                        if (ptr == parent_ptr->left)
-                        {
-                            rotate_right(root, parent_ptr);
-                            ptr = parent_ptr;
-                            parent_ptr = ptr->parent;
-                        }
-
-                        rotate_left(root, grand_parent_ptr);
-                        std::swap(parent_ptr->color, grand_parent_ptr->color);
-                        ptr = parent_ptr;
-                    }
-                }
-            }
-
-            root->color = node_color::black;
-        }
-
-        static node<Key, Data> * bst_insert(node<Key, Data> * root, node<Key, Data> * & ptr)
-        {
-            if (!root)
-                return ptr;
-
-            if (ptr->info.first == root->info.first)
-            {
-                root->info.second = ptr->info.second;
-
-                delete ptr;
-                ptr = nullptr;
-
-                return root;
-            }
-
-            if (ptr->info.first < root->info.first)
-            {
-                root->left = bst_insert(root->left, ptr);
-                root->left->parent = root;
-            }
-            else if (ptr->info.first > root->info.first)
-            {
-                root->right = bst_insert(root->right, ptr);
-                root->right->parent = root;
-            }
-
-            return root;
-        }
-
-    private:
-        node<Key, Data> * m_root;
-        std::vector< node<Key, Data> * > m_nodes;
-    };
-}
-
 namespace prime {
 
-    bool is_prime(uint32_t value)
+    bool is_prime(int64_t value)
     {
         if (value == 2)
         {
@@ -295,7 +25,7 @@ namespace prime {
             return false;
         }
 
-        uint32_t step = 3;
+        int64_t step = 3;
         while (step * step <= value)
         {
             if (value % step == 0)
@@ -309,7 +39,7 @@ namespace prime {
         return true;
     }
 
-    uint32_t prime_more_than(uint32_t value)
+    int64_t prime_more_than(int64_t value)
     {
         while (!is_prime(value))
         {
@@ -322,21 +52,21 @@ namespace prime {
 
 namespace l0sample {
 
-    rbtree::tree<uint32_t, uint32_t> cache_prime;
+    std::map<int64_t, int64_t> cache_prime;
 
-    uint32_t prime_more_than(uint32_t value)
+    int64_t prime_more_than(int64_t value)
     {
-        auto * search = cache_prime.find(value);
+        auto search = cache_prime.find(value);
 
-        if (!search)
+        if (search == cache_prime.end())
         {
-            return cache_prime.push(value, prime::prime_more_than(4 * value));
+            cache_prime[value] = prime::prime_more_than(4 * value);
         }
 
-        return search->info.second;
+        return cache_prime[value];
     }
 
-    int64_t fast_pow(int32_t value, uint32_t p_value, uint32_t mod)
+    int64_t fast_pow(int64_t value, int64_t p_value, int64_t mod)
     {
         if (p_value == 0)
         {
@@ -348,23 +78,23 @@ namespace l0sample {
             return value;
         }
 
-        int32_t mult = (p_value % 2 == 1 ? value : 1);
+        int64_t mult = (p_value % 2 == 1 ? value : 1);
 
-        return mult * fast_pow(value * value % mod, p_value / 2, mod);
+        return mult * fast_pow((value * value) % mod, p_value / 2, mod);
     }
 
     class hash_k
     {
     public:
-        explicit hash_k(int32_t dom, uint32_t k_value = 2)
+        explicit hash_k(int64_t dom, int64_t k_value = 2)
             : m_dom(dom),
             m_prime_value(prime::prime_more_than(2 * dom))
         {
-            std::uniform_int_distribution<uint32_t> rand_uint32_t(0, m_prime_value - 1);
+            std::uniform_int_distribution<int64_t> rand_int64_t(0, m_prime_value - 1);
 
             for (auto i = 0u; i < k_value; ++i)
             {
-                m_coefficients.push_back(rand_uint32_t(mt));
+                m_coefficients.push_back(rand_int64_t(mt));
             }
         }
 
@@ -380,13 +110,6 @@ namespace l0sample {
             m_coefficients = hash.m_coefficients;
         }
 
-        hash_k(hash_k && other) noexcept
-        {
-            std::swap(m_dom, other.m_dom);
-            std::swap(m_prime_value, other.m_prime_value);
-            std::swap(m_coefficients, other.m_coefficients);
-        }
-
         hash_k & operator=(const hash_k & other)
         {
             m_dom = other.m_dom;
@@ -396,18 +119,9 @@ namespace l0sample {
             return *this;
         }
 
-        hash_k & operator=(hash_k && other) noexcept
+        int64_t at(int64_t value)
         {
-            std::swap(m_dom, other.m_dom);
-            std::swap(m_prime_value, other.m_prime_value);
-            std::swap(m_coefficients, other.m_coefficients);
-
-            return *this;
-        }
-
-        uint32_t at(uint32_t value)
-        {
-            uint32_t result = 0, mult = 1;
+            int64_t result = 0, mult = 1;
 
             for (auto el : m_coefficients)
             {
@@ -419,99 +133,92 @@ namespace l0sample {
         }
 
     private:
-        int32_t m_dom;
-        uint32_t m_prime_value;
-        std::vector<uint32_t> m_coefficients;
+        int64_t m_dom;
+        int64_t m_prime_value;
+        std::vector<int64_t> m_coefficients;
     };
 
-    class one_sparse_vector
+    struct one_sparse_vector
     {
-    public:
-        explicit one_sparse_vector(uint32_t size, double delta)
-            : m_size(size),
-            m_prime_value(prime_more_than(4 * size)),
-            m_s_one(0), m_s_two(0),
-            m_k_value(1 - 2 * int32_t(std::ceil(std::log2(delta))))
+        explicit one_sparse_vector(int64_t size_, double delta_)
+            : size(size_), prime_value(prime_more_than(4 * size_)),
+            s_one(0), s_two(0),
+            k_value(1 - 2 * int64_t(std::ceil(std::log2(delta_))))
         {
-            std::uniform_int_distribution<int32_t> rand_int32_t(0, m_prime_value - 1);
+            std::uniform_int_distribution<int64_t> rand_int64_t(0, prime_value - 1);
 
-            for (auto i = 0u; i < m_k_value; ++i)
+            for (auto i = 0u; i < k_value; ++i)
             {
-                m_tests.push_back(std::make_pair(0, rand_int32_t(mt)));
+                tests.push_back(std::make_pair(0, rand_int64_t(mt)));
             }
         }
 
         one_sparse_vector(const one_sparse_vector & other)
         {
-            m_size = other.m_size;
-            m_prime_value = other.m_prime_value;
-            m_k_value = other.m_k_value;
-            m_s_one = other.m_s_one;
-            m_s_two = other.m_s_two;
-            m_tests = other.m_tests;
+            size = other.size;
+            prime_value = other.prime_value;
+            k_value = other.k_value;
+            s_one = other.s_one;
+            s_two = other.s_two;
+            tests = other.tests;
         }
 
         one_sparse_vector & operator=(const one_sparse_vector & other)
         {
-            m_size = other.m_size;
-            m_prime_value = other.m_prime_value;
-            m_k_value = other.m_k_value;
-            m_s_one = other.m_s_one;
-            m_s_two = other.m_s_two;
-            m_tests = other.m_tests;
+            size = other.size;
+            prime_value = other.prime_value;
+            k_value = other.k_value;
+            s_one = other.s_one;
+            s_two = other.s_two;
+            tests = other.tests;
 
             return *this;
         }
 
-        one_sparse_vector(one_sparse_vector && other) noexcept
+        one_sparse_vector copy()
         {
-            std::swap(m_size, other.m_size);
-            std::swap(m_prime_value, other.m_prime_value);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_s_one, other.m_s_one);
-            std::swap(m_s_two, other.m_s_two);
-            std::swap(m_tests, other.m_tests);
-        }
-
-        one_sparse_vector & operator=(one_sparse_vector && other) noexcept
-        {
-            std::swap(m_size, other.m_size);
-            std::swap(m_prime_value, other.m_prime_value);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_s_one, other.m_s_one);
-            std::swap(m_s_two, other.m_s_two);
-            std::swap(m_tests, other.m_tests);
-
-            return *this;
-        }
-
-        void update(uint32_t index, int32_t value)
-        {
-            m_s_one += value;
-            m_s_two += index * value;
-
-            for (auto & test : m_tests)
+            one_sparse_vector result(size, 1.0);
+            result.size = size;
+            result.prime_value = prime_value;
+            result.s_one = s_one;
+            result.s_two = s_two;
+            result.k_value = k_value;
+            result.tests = {};
+            for (auto & test : tests)
             {
-                test.first += value * fast_pow(test.second, index, m_prime_value) % m_prime_value;
+                result.tests.push_back(test);
+            }
+
+            return result;
+        }
+
+        void update(int64_t index, int64_t value)
+        {
+            s_one += value;
+            s_two += index * value;
+
+            for (auto & test : tests)
+            {
+                test.first += (value * fast_pow(test.second, index, prime_value)) % prime_value;
             }
         }
 
-        std::pair<int32_t, int32_t> recover()
+        std::pair<int64_t, int64_t> recover()
         {
-            return std::make_pair(m_s_two / m_s_one, m_s_one);
+            return std::make_pair(s_two / s_one, s_one);
         }
 
         bool correct()
         {
-            if (m_s_one == 0 || m_s_two % m_s_one != 0 || m_s_two * m_s_one < 0)
+            if (s_one == 0 || s_two % s_one != 0 || s_two * s_one < 0)
                 return false;
 
             auto data = recover();
 
-            for (auto & test : m_tests)
+            for (auto & test : tests)
             {
-                if ((data.second * fast_pow(test.second, data.first, m_prime_value)
-                    - int32_t(test.first)) % m_prime_value != 0)
+                if ((data.second * fast_pow(test.second, data.first, prime_value)
+                    - test.first) % prime_value != 0)
                 {
                     return false;
                 }
@@ -520,143 +227,128 @@ namespace l0sample {
             return true;
         }
 
-        friend one_sparse_vector operator+(
-            const one_sparse_vector & base,
-            const one_sparse_vector & other)
+        one_sparse_vector operator+(const one_sparse_vector & other)
         {
-            std::vector < std::pair<int32_t, int32_t> > tests;
-
-            for (auto i = 0; i < other.m_k_value; ++i)
+            one_sparse_vector result = copy();
+            result.s_one = s_one + other.s_one;
+            result.s_two = s_two + other.s_two;
+            result.tests = {};
+            
+            for (int64_t i = 0; i < other.k_value; ++i)
             {
-                tests.push_back(std::make_pair(
-                    (base.m_tests[i].first + other.m_tests[i].first)
-                    % other.m_prime_value,
-                    other.m_tests[i].first));
+                int64_t first = (tests[i].first + other.tests[i].first) % other.prime_value;
+                int64_t second = other.tests[i].second;
+
+                result.tests.push_back(std::make_pair(first, second));
             }
 
-            return one_sparse_vector(base.m_size, base.m_prime_value,
-                base.m_s_one + other.m_s_one, base.m_s_two + other.m_s_two,
-                base.m_k_value, tests);
+            return result;
         }
 
-    private:
-        explicit one_sparse_vector(uint32_t size, uint32_t prime_value,
-            int32_t s_one, int32_t s_two,
-            uint32_t k_value,
-            std::vector < std::pair<int32_t, int32_t> > & tests)
-            : m_size(size), m_prime_value(prime_value),
-            m_s_one(s_one), m_s_two(s_two), m_k_value(k_value),
-            m_tests(tests)
-        {
-        }
-
-    private:
-        uint32_t m_size;
-        uint32_t m_prime_value;
-
-        int32_t m_s_one;
-        int32_t m_s_two;
-        uint32_t m_k_value;
-
-        std::vector < std::pair<int32_t, int32_t> > m_tests;
+        int64_t size;
+        int64_t prime_value;
+        int64_t s_one;
+        int64_t s_two;
+        int64_t k_value;
+        std::vector< std::pair<int64_t, int64_t> > tests;
     };
 
-    class s_sparse_vector
+    struct s_sparse_vector
     {
-    public:
-        explicit s_sparse_vector(uint32_t size, int32_t s_value, double delta)
-            : m_cnt(0),
-            m_size(size),
-            m_s_value(s_value),
-            m_k_value(1 - 2 * int32_t(std::ceil(std::log2(delta / 2.))))
+        explicit s_sparse_vector(int64_t size_, int64_t s_value_, double delta_)
+            : cnt(0), size(size_), s_value(s_value_),
+            k_value(1 - 2 * int64_t(std::ceil(std::log2(delta_ / 2.))))
         {
-            double delta_decoder = delta / (2. * m_k_value * m_s_value);
+            double delta_decoder = delta_ / (2. * k_value * s_value);
 
-            m_sketchs.resize(m_k_value);
-            for (auto i = 0; i < m_k_value; ++i)
+            for (auto i = 0; i < k_value; ++i)
             {
-                for (auto j = 0; j < 2 * m_s_value; ++j)
+                sketchs.push_back({});
+                
+                for (auto j = 0; j < 2 * s_value; ++j)
                 {
-                    m_sketchs[i].push_back(one_sparse_vector(m_size, delta_decoder));
+                    sketchs.back().push_back(one_sparse_vector(size, delta_decoder));
                 }
 
-                m_hashes.push_back(hash_k(2 * m_s_value));
+                hashes.push_back(hash_k(2 * s_value));
             }
         }
 
         s_sparse_vector(const s_sparse_vector & other)
         {
-            m_size = other.m_size;
-            m_s_value = other.m_s_value;
-            m_cnt = other.m_cnt;
-            m_k_value = other.m_k_value;
-            m_sketchs = other.m_sketchs;
-            m_hashes = other.m_hashes;
+            size = other.size;
+            s_value = other.s_value;
+            cnt = other.cnt;
+            k_value = other.k_value;
+            sketchs = other.sketchs;
+            hashes = other.hashes;
         }
 
         s_sparse_vector & operator=(const s_sparse_vector & other)
         {
-            m_size = other.m_size;
-            m_s_value = other.m_s_value;
-            m_cnt = other.m_cnt;
-            m_k_value = other.m_k_value;
-            m_sketchs = other.m_sketchs;
-            m_hashes = other.m_hashes;
+            size = other.size;
+            s_value = other.s_value;
+            cnt = other.cnt;
+            k_value = other.k_value;
+            sketchs = other.sketchs;
+            hashes = other.hashes;
 
             return *this;
         }
 
-        s_sparse_vector(s_sparse_vector && other) noexcept
+        s_sparse_vector copy()
         {
-            std::swap(m_size, other.m_size);
-            std::swap(m_s_value, other.m_s_value);
-            std::swap(m_cnt, other.m_cnt);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_sketchs, other.m_sketchs);
-            std::swap(m_hashes, other.m_hashes);
-        }
+            s_sparse_vector result(size, 1, 1.0);
+            result.cnt = cnt;
+            result.size = size;
+            result.s_value = s_value;
+            result.k_value = k_value;
+            result.sketchs = {};
 
-        s_sparse_vector & operator=(s_sparse_vector && other) noexcept
-        {
-            std::swap(m_size, other.m_size);
-            std::swap(m_s_value, other.m_s_value);
-            std::swap(m_cnt, other.m_cnt);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_sketchs, other.m_sketchs);
-            std::swap(m_hashes, other.m_hashes);
-
-            return *this;
-        }
-
-        void update(uint32_t index, int32_t value)
-        {
-            ++m_cnt;
-
-            for (auto i = 0; i < m_k_value; ++i)
+            for (int64_t i = 0; i < k_value; ++i)
             {
-                m_sketchs[i][m_hashes[i].at(index)].update(index, value);
+                result.sketchs.push_back({});
+                
+                for (auto j = 0; j < 2 * s_value; ++j)
+                {
+                    result.sketchs.back().push_back(sketchs[i][j].copy());
+                }
+            }
+
+            result.hashes = hashes;
+
+            return result;
+        }
+
+        void update(int64_t index, int64_t value)
+        {
+            ++cnt;
+
+            for (int64_t i = 0; i < k_value; ++i)
+            {
+                sketchs[i][hashes[i].at(index)].update(index, value);
             }
         }
 
-        std::vector< std::pair<uint32_t, int32_t> > recover()
+        std::vector< std::pair<int64_t, int64_t> > recover()
         {
-            rbtree::tree<uint32_t, int32_t> tmp_r;
-            std::vector< std::pair<uint32_t, int32_t> > result;
+            std::map<int64_t, int64_t> tmp_r;
+            std::vector< std::pair<int64_t, int64_t> > result;
 
-            for (auto & table : m_sketchs)
+            for (auto & table : sketchs)
             {
                 for (auto & cell : table)
                 {
                     if (cell.correct())
                     {
                         auto pair = cell.recover();
-                        auto * search = tmp_r.find(pair.first);
-                        if (!search)
+
+                        if (tmp_r.find(pair.first) == tmp_r.end())
                         {
                             result.push_back(pair);
                         }
 
-                        tmp_r.push(pair.first, pair.second);
+                        tmp_r[pair.first] = pair.second;
                     }
                 }
             }
@@ -664,192 +356,164 @@ namespace l0sample {
             return result;
         }
 
-        friend s_sparse_vector operator+(
-            const s_sparse_vector & base,
-            const s_sparse_vector & other)
+        s_sparse_vector operator+(const s_sparse_vector & other)
         {
-            std::vector< std::vector<one_sparse_vector> > sketchs;
-
-            for (auto i = 0; i < base.m_k_value; ++i)
+            s_sparse_vector result = copy();
+            result.cnt += other.cnt;
+            result.sketchs = {};
+            
+            for (int64_t i = 0; i < k_value; ++i)
             {
-                std::vector<one_sparse_vector> tmp_r_vector;
-                for (auto j = 0; j < 2 * base.m_s_value; ++j)
+                result.sketchs.push_back({});
+                
+                for (auto j = 0; j < 2 * s_value; ++j)
                 {
-                    tmp_r_vector.push_back(base.m_sketchs[i][j] + other.m_sketchs[i][j]);
+                    result.sketchs.back().push_back(sketchs[i][j] + other.sketchs[i][j]);
                 }
-                sketchs.push_back(tmp_r_vector);
             }
-
-            s_sparse_vector result(base.m_size, base.m_s_value,
-                base.m_cnt + other.m_cnt, base.m_k_value,
-                sketchs, base.m_hashes);
 
             return result;
         }
 
         bool touched()
         {
-            return m_cnt != 0;
+            return cnt != 0;
         }
 
-    private:
-        explicit s_sparse_vector(uint32_t size, int32_t s_value, uint32_t cnt,
-            int32_t k_value,
-            const std::vector< std::vector<one_sparse_vector> > & sketchs,
-            const std::vector< hash_k > & hashes)
-            : m_cnt(cnt), m_size(size), m_s_value(s_value), m_k_value(k_value),
-            m_sketchs(sketchs), m_hashes(hashes)
-        {
-        }
+        int64_t cnt;
+        int64_t size;
+        int64_t s_value;
+        int64_t k_value;
 
-    private:
-        uint32_t m_cnt;
-        uint32_t m_size;
-        int32_t m_s_value;
-        int32_t m_k_value;
-
-        std::vector< std::vector<one_sparse_vector> > m_sketchs;
-        std::vector< hash_k > m_hashes;
+        std::vector< std::vector<one_sparse_vector> > sketchs;
+        std::vector< hash_k > hashes;
     };
 
-    class main_vector
+    struct main_vector
     {
-    public:
         main_vector()
-            : m_s_value(0), m_k_value(0), m_size(0)
+            : s_value(0), k_value(0), size(0)
         {
         }
 
-        explicit main_vector(uint32_t size, double delta)
-            : m_s_value(3 * (1 - int32_t(std::ceil(std::log2(delta / 2.))))),
-            m_k_value(1 + int32_t(std::ceil(std::log(size)))),
-            m_size(size), m_hash(hash_k(std::pow(size, 3), m_s_value))
+        explicit main_vector(int64_t size_, double delta_)
+            : s_value(3 * (1 - int64_t(std::ceil(std::log2(delta_ / 2.))))),
+            k_value(1 + int64_t(std::ceil(std::log(size_)))),
+            size(size_), hash(hash_k(int64_t(std::pow(size_, 3)), s_value))
         {
-            double delta_decode = delta / 2.;
+            // std::cout << "S: " << s_value << "; k: " << k_value
+            //             << "; size: " << size << "\n";
 
-            for (auto i = 0; i < m_k_value; ++i)
+            double delta_decode = delta_ / 2.;
+
+            for (auto i = 0; i < k_value; ++i)
             {
-                m_sketchs.push_back(
-                    s_sparse_vector(size, m_s_value, delta_decode));
+                sketchs.push_back(
+                    s_sparse_vector(size, s_value, delta_decode));
             }
         }
 
         main_vector(const main_vector & other)
         {
-            m_s_value = other.m_s_value;
-            m_k_value = other.m_k_value;
-            m_size = other.m_size;
-            m_hash = other.m_hash;
-            m_sketchs = other.m_sketchs;
+            s_value = other.s_value;
+            k_value = other.k_value;
+            size = other.size;
+            hash = other.hash;
+            sketchs = other.sketchs;
         }
 
         main_vector & operator=(const main_vector & other)
         {
-            m_s_value = other.m_s_value;
-            m_k_value = other.m_k_value;
-            m_size = other.m_size;
-            m_hash = other.m_hash;
-            m_sketchs = other.m_sketchs;
+            s_value = other.s_value;
+            k_value = other.k_value;
+            size = other.size;
+            hash = other.hash;
+            sketchs = other.sketchs;
 
             return *this;
         }
 
-        main_vector(main_vector && other) noexcept
+        main_vector copy()
         {
-            std::swap(m_s_value, other.m_s_value);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_size, other.m_size);
-            std::swap(m_hash, other.m_hash);
-            std::swap(m_sketchs, other.m_sketchs);
-        }
+            main_vector result(size, 1.0);
+            result.s_value = s_value;
+            result.k_value = k_value;
+            result.size = size;
+            result.hash = hash;
+            result.sketchs = {};
 
-        main_vector & operator=(main_vector && other) noexcept
-        {
-            std::swap(m_s_value, other.m_s_value);
-            std::swap(m_k_value, other.m_k_value);
-            std::swap(m_size, other.m_size);
-            std::swap(m_hash, other.m_hash);
-            std::swap(m_sketchs, other.m_sketchs);
-
-            return *this;
-        }
-
-        void update(uint32_t index, int32_t value)
-        {
-            for (auto i = 0; i < m_k_value; ++i)
+            for (int64_t i = 0; i < k_value; ++i)
             {
-                uint32_t pow = std::pow(2, i);
-                if (m_hash.at(index) % pow == 0)
+                result.sketchs.push_back(sketchs[i].copy());
+            }
+
+            return result;
+        }
+
+        void update(int64_t index, int64_t value)
+        {
+            for (auto i = 0; i < k_value; ++i)
+            {
+                int64_t pow = int64_t(std::pow(2, i));
+                if (hash.at(index) % pow == 0)
                 {
-                    m_sketchs[i].update(index, value);
+                    sketchs[i].update(index, value);
                 }
             }
         }
 
-        std::pair<uint32_t, int32_t> sample()
+        std::pair<int64_t, int64_t> sample()
         {
-            for (auto ii = 0; ii < m_k_value; ++ii)
+            for (int64_t i = 0; i < k_value; ++i)
             {
-                auto result = m_sketchs[m_k_value - 1 - ii].recover();
+                auto result = sketchs[k_value - 1 - i].recover();
 
                 if (!result.empty())
                 {
-                    std::uniform_int_distribution<uint32_t> rand_uint32_t(0, result.size() - 1);
+                    std::uniform_int_distribution<int64_t> rand_int64_t(0, result.size() - 1);
 
-                    return result[rand_uint32_t(mt)];
+                    return result[rand_int64_t(mt)];
                 }
             }
 
             return std::make_pair(0, 0);
         }
 
-        friend main_vector operator+(
-            const main_vector & base,
-            const main_vector & other)
+        main_vector operator+(const main_vector & other)
         {
-            std::vector< s_sparse_vector > sketchs;
+            main_vector result = copy();
+            result.sketchs = {};
 
-            for (auto i = 0; i < base.m_k_value; ++i)
+            for (int64_t i = 0; i < k_value; ++i)
             {
-                sketchs.push_back(base.m_sketchs[i] + other.m_sketchs[i]);
+                result.sketchs.push_back(sketchs[i] + other.sketchs[i]);
             }
 
-            return main_vector(base.m_size, base.m_s_value, base.m_k_value,
-                base.m_hash, sketchs);
+            return result;
         }
 
-    private:
-        explicit main_vector(uint32_t size, int32_t s_value,
-            int32_t k_value, const hash_k & hash,
-            const std::vector< s_sparse_vector > & sketchs)
-            : m_s_value(s_value), m_k_value(k_value), m_size(size),
-            m_hash(hash), m_sketchs(sketchs)
-        {
-        }
-
-    private:
-        int32_t m_s_value;
-        int32_t m_k_value;
-        uint32_t m_size;
-        hash_k m_hash;
-        std::vector< s_sparse_vector > m_sketchs;
+        int64_t s_value;
+        int64_t k_value;
+        int64_t size;
+        hash_k hash;
+        std::vector< s_sparse_vector > sketchs;
     };
 }
 
 class dsu
 {
 public:
-    explicit dsu(uint32_t vertex_count)
+    explicit dsu(int64_t vertex_count)
         : m_vertex_count(vertex_count)
     {
-        for (auto i = 0u; i < m_vertex_count; ++i)
+        for (int64_t i = 0; i < m_vertex_count; ++i)
         {
             m_rank.push_back(0);
             m_parent.push_back(i);
         }
     }
 
-    uint32_t find(uint32_t u)
+    int64_t find(int64_t u)
     {
         if (m_parent.at(u) == u)
         {
@@ -861,7 +525,7 @@ public:
         return m_parent.at(u);
     }
 
-    void union_(uint32_t u, uint32_t v)
+    void union_(int64_t u, int64_t v)
     {
         u = find(u);
         v = find(v);
@@ -880,9 +544,9 @@ public:
     }
 
 private:
-    uint32_t m_vertex_count;
-    std::vector<int32_t> m_rank;
-    std::vector<uint32_t> m_parent;
+    int64_t m_vertex_count;
+    std::vector<int64_t> m_rank;
+    std::vector<int64_t> m_parent;
 };
 
 constexpr double delta_const = 0.01;
@@ -890,21 +554,26 @@ constexpr double delta_const = 0.01;
 class DynamicGraph
 {
 public:
-    explicit DynamicGraph(uint32_t vertex_count)
+    explicit DynamicGraph(int64_t vertex_count)
         : m_vertex_count(vertex_count),
-        m_sketch_count(1 + std::ceil(std::log2(vertex_count)))
+        m_sketch_count(1 + int64_t(std::ceil(std::log2(vertex_count))))
     {
-        uint32_t pow = std::pow(m_vertex_count, 2);
+        // std::cout << "DynamicGraph: " << "vertex count: " << m_vertex_count
+        //             << "; k: " << m_sketch_count << "\n";
+
+        int64_t pow = int64_t(std::pow(m_vertex_count, 2));
         for (auto i = 0; i < m_sketch_count; ++i)
         {
-            m_sketch.push_back(
-                generate_graph_sketch(m_vertex_count, pow, delta_const));
+            m_sketch.push_back(generate_graph_sketch(
+                                    m_vertex_count, pow, delta_const));
         }
     }
 
-    void AddEdge(uint32_t u, uint32_t v)
+    void AddEdge(int64_t u, int64_t v)
     {
-        uint32_t edge_number = u * m_vertex_count + v;
+        if (u > v) std::swap(u, v);
+
+        int64_t edge_number = u * m_vertex_count + v;
 
         for (auto i = 0; i < m_sketch_count; ++i)
         {
@@ -913,9 +582,11 @@ public:
         }
     }
 
-    void RemoveEdge(uint32_t u, uint32_t v)
+    void RemoveEdge(int64_t u, int64_t v)
     {
-        uint32_t edge_number = u * m_vertex_count + v;
+        if (u > v) std::swap(u, v);
+
+        int64_t edge_number = u * m_vertex_count + v;
 
         for (auto i = 0; i < m_sketch_count; ++i)
         {
@@ -924,50 +595,53 @@ public:
         }
     }
 
-    uint64_t GetComponentsNumber() const
+    int64_t GetComponentsNumber() const
     {
-        rbtree::tree< uint32_t, std::vector<uint32_t> > cur_cc;
+        std::map< int64_t, std::vector<int64_t> > cur_cc;
 
-        for (auto i = 0u; i < m_vertex_count; ++i)
+        for (int64_t i = 0; i < m_vertex_count; ++i)
         {
-            cur_cc.push(i, std::vector<uint32_t>(1, i));
+            cur_cc[i] = { i };
         }
 
         dsu _dsu(m_vertex_count);
 
-        for (auto lev = 0; lev < m_sketch_count; ++lev)
+        for (int64_t lev = 0; lev < m_sketch_count; ++lev)
         {
-            rbtree::tree<uint32_t, l0sample::main_vector> sketch_sum;
+            std::map<int64_t, l0sample::main_vector> sketch_sum;
 
-            for (auto it = cur_cc.items.begin(); it != cur_cc.items.end(); ++it)
+            for (auto it = cur_cc.begin(); it != cur_cc.end(); ++it)
             {
-                auto & key = (*it)->info.first;
-                auto & component = (*it)->info.second;
+                const int64_t & key = it->first;
+                auto & component = it->second;
 
-                auto & sketch_sum_key = sketch_sum[key];
+                sketch_sum[key] = m_sketch[lev][component[0]];
 
-                sketch_sum_key = m_sketch[lev][component[0]];
-
-                for (auto j = 1; j < component.size(); ++j)
+                for (uint64_t j = 1; j < component.size(); ++j)
                 {
-                    sketch_sum_key = sketch_sum_key + m_sketch[lev][component[j]];
+                    sketch_sum[key] = sketch_sum[key] + m_sketch[lev][component[j]];
                 }
             }
 
-            for (auto it = sketch_sum.items.begin(); it != sketch_sum.items.end(); ++it)
+            for (auto it = sketch_sum.begin(); it != sketch_sum.end(); ++it)
             {
-                auto pair = (*it)->info.second.sample();
+                auto pair = it->second.sample();
 
                 if (pair.first != 0 && pair.second != 0)
                 {
-                    _dsu.union_(pair.first / m_vertex_count,
-                        pair.first % m_vertex_count);
+                    int64_t u_ = pair.first / m_vertex_count;
+                    int64_t v_ = pair.first % m_vertex_count;
+
+                    // std::cout << "(" << u_ << ", " << v_ << ", " 
+                    //             << pair.first << ", " << m_vertex_count << ")\n";
+
+                    _dsu.union_(u_, v_);
                 }
             }
 
             cur_cc.clear();
 
-            for (auto i = 0u; i < m_vertex_count; ++i)
+            for (auto i = 0; i < m_vertex_count; ++i)
             {
                 auto parent = _dsu.find(i);
 
@@ -980,22 +654,23 @@ public:
 
 private:
     std::vector< l0sample::main_vector >
-        generate_graph_sketch(uint32_t size, uint32_t msize, double delta)
+        generate_graph_sketch(int64_t size, int64_t msize, double delta)
     {
+        l0sample::main_vector sketch(msize, delta);
+
         std::vector< l0sample::main_vector > result;
 
         for (auto i = 0; i < size; ++i)
         {
-            result.push_back(l0sample::main_vector(msize, delta));
+            result.push_back(sketch.copy());
         }
 
         return result;
     }
 
 private:
-    const uint32_t m_vertex_count;
-    const uint32_t m_sketch_count;
+    const int64_t m_vertex_count;
+    const int64_t m_sketch_count;
 
     std::vector< std::vector<l0sample::main_vector> > m_sketch;
 };
-

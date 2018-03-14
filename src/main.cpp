@@ -3,10 +3,8 @@
 #include <functional>
 #include <tuple>
 
-#include "DynamicGraph.hpp"
+#include "dynamic_graph.hpp"
 
-// test rbtree
-void tests_rbtree();
 
 // tests l0sample
 void tests_fast_pow();
@@ -16,15 +14,12 @@ void tests_main_vector();
 
 // tests DynamicGraph
 void tests_dynamic_graph();
-void speed_test();
+void hard_test();
 
 int main()
 {
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
-
-    // tests rbtree
-    //tests_rbtree();
 
     // tests l0sample
     tests_fast_pow();
@@ -34,149 +29,9 @@ int main()
 
     // tests DynamicGraph
     tests_dynamic_graph();
-
-    system("pause");
+    hard_test();
 
     return 0;
-}
-
-void tests_rbtree()
-{
-    std::cout << "Tests rbtree\n";
-
-    // Test 1
-    {
-        std::cout << "Test 1:\n";
-
-        rbtree::tree<uint32_t, int32_t> dict;
-
-        for (auto i = 0u; i < 10; ++i)
-        {
-            dict.push(i, i + 1);
-        }
-
-        for (auto * el : dict.items)
-        {
-            std::cout << "(" << el->info.first << ", " << el->info.second << ") ";
-        }
-        std::cout << "\n";
-
-        dict.push(5, -100);
-        dict.push(9, -100000);
-
-        for (auto * el : dict.items)
-        {
-            std::cout << "(" << el->info.first << ", " << el->info.second << ") ";
-        }
-        std::cout << "\n";
-    }
-
-    // Test 2
-    {
-        std::cout << "Test 2:\n";
-
-        rbtree::tree<uint32_t, int32_t> dict;
-
-        for (auto i = 0u; i < 10; ++i)
-        {
-            dict.push(i, i + 1);
-        }
-
-        for (auto * el : dict.items)
-        {
-            std::cout << "(" << el->info.first << ", " << el->info.second << ") ";
-        }
-        std::cout << "\n";
-
-        dict.clear();
-
-        for (auto i = 0u; i < 3; ++i)
-        {
-            dict.push(3, 21);
-        }
-
-        for (auto * el : dict.items)
-        {
-            std::cout << "(" << el->info.first << ", " << el->info.second << ") ";
-        }
-        std::cout << "\n";
-    }
-
-    // Test 3
-    {
-        std::cout << "Test 3:\n";
-
-        rbtree::tree<uint32_t, int32_t> dict;
-
-        for (auto i = 0u; i < 10; ++i)
-        {
-            dict.push(i, i + 1);
-        }
-
-        dict.clear();
-
-        auto * result = dict.find(5);
-
-        if (result)
-        {
-            std::cout << "result: (" << result->info.first << ", " << result->info.second << ")\n";
-        }
-        else
-        {
-            std::cout << "Not found\n";
-        }
-    }
-
-    // Test 4
-    {
-        std::cout << "Test 4:\n";
-
-        rbtree::tree<uint32_t, int32_t> dict;
-
-        for (auto i = 0u; i < 5; ++i)
-        {
-            dict.push(i, 10 + i);
-        }
-
-        for (auto i = 0u; i < 6; ++i)
-        {
-            auto & el = dict[i];
-
-            std::cout << i << ": " << el << "\n";
-        }
-
-        //rbtree::tree<uint32_t, std::vector<int32_t>> dict;
-
-        //for (auto i = 0u; i < 5; ++i)
-        //{
-        //    std::vector<int32_t> tmp;
-        //    for (auto j = 10; j < 13; ++j)
-        //    {
-        //        tmp.push_back(j);
-        //    }
-
-        //    dict.push(i, tmp);
-        //}
-        //
-        ////dict[5] = { -1000 };
-        ////dict[1] = { 3 };
-        ////dict[10] = { 1, 2, 3 };
-
-        //for (auto i = 0u; i < 6; ++i)
-        //{
-        //    if (i == 5)
-        //    {
-        //    }
-
-        //    auto & tmp = dict[i];
-        //    std::cout << i << ": [ ";
-        //    for (auto & el : tmp)
-        //    {
-        //        std::cout << el << ", ";
-        //    }
-        //    std::cout << "]\n";
-        //}
-    }
 }
 
 void tests_fast_pow()
@@ -381,13 +236,13 @@ void tests_s_sparse_vector()
 
         r.update(17, 42);
 
-        std::uniform_int_distribution<uint32_t> rand_uint32_t_one(0, 99);
-        std::uniform_int_distribution<int32_t> rand_uint32_t_two(1, 25);
+        std::uniform_int_distribution<int64_t> rand_int64_t_one(0, 99);
+        std::uniform_int_distribution<int32_t> rand_int64_t_two(1, 25);
 
         for (auto i = 0u; i < 100; ++i)
         {
-            auto ind = rand_uint32_t_one(mt);
-            auto val = rand_uint32_t_two(mt);
+            auto ind = rand_int64_t_one(mt);
+            auto val = rand_int64_t_two(mt);
 
             r.update(ind, val);
             r.update(ind, -val);
@@ -422,8 +277,8 @@ void tests_s_sparse_vector()
 
         l0sample::s_sparse_vector r(100, 5, 0.01);
 
-        std::vector< std::pair<uint32_t, int32_t> > updates = {
-            { 17, 42 },{ 18, 43 },{ 19, 44 },{ 20, 45 },{ 21, 46 }
+        std::vector< std::pair<int64_t, int64_t> > updates = {
+            { 17, 42 }, { 18, 43 }, { 19, 44 }, { 20, 45 }, { 21, 46 }
         };
 
         for (auto & pair : updates)
@@ -431,13 +286,13 @@ void tests_s_sparse_vector()
             r.update(pair.first, pair.second);
         }
 
-        std::uniform_int_distribution<uint32_t> rand_uint32_t_one(0, 99);
-        std::uniform_int_distribution<int32_t> rand_uint32_t_two(1, 25);
+        std::uniform_int_distribution<int64_t> rand_int64_t_one(0, 99);
+        std::uniform_int_distribution<int64_t> rand_int64_t_two(1, 25);
 
         for (auto i = 0u; i < 100; ++i)
         {
-            auto ind = rand_uint32_t_one(mt);
-            auto val = rand_uint32_t_two(mt);
+            auto ind = rand_int64_t_one(mt);
+            auto val = rand_int64_t_two(mt);
 
             r.update(ind, val);
             r.update(ind, -val);
@@ -490,7 +345,7 @@ void tests_main_vector()
     {
         std::cout << "-- Test 2: ";
 
-        uint32_t size = 20;
+        int64_t size = 20;
 
         std::vector< l0sample::main_vector > rs;
 
@@ -499,15 +354,15 @@ void tests_main_vector()
             rs.push_back(l0sample::main_vector(size, 0.01));
         }
 
-        std::vector<int32_t> vals(size, 0);
+        std::vector<int64_t> vals(size, 0);
 
-        std::uniform_int_distribution<uint32_t> rand_uint32_t_one(0, size - 1);
-        std::uniform_int_distribution<int32_t> rand_int32_t_two(-5, 5);
+        std::uniform_int_distribution<int64_t> rand_int64_t_one(0, size - 1);
+        std::uniform_int_distribution<int64_t> rand_int64_t_two(-5, 5);
 
         for (auto i = 0; i < size; ++i)
         {
-            auto ind = rand_uint32_t_one(mt);
-            auto val = rand_int32_t_two(mt);
+            auto ind = rand_int64_t_one(mt);
+            auto val = rand_int64_t_two(mt);
 
             vals[ind] += val;
 
@@ -530,7 +385,7 @@ void tests_main_vector()
             }
         }
 
-        std::vector< std::pair<uint32_t, int32_t> > answers;
+        std::vector< std::pair<int64_t, int64_t> > answers;
 
         //std::cout << "vals:\n";
         //for (auto i = 0u; i < vals.size(); ++i)
@@ -577,7 +432,7 @@ void tests_dynamic_graph()
 
         DynamicGraph g(6);
 
-        std::vector< std::pair<uint32_t, uint32_t> > edges = {
+        std::vector< std::pair<int64_t, int64_t> > edges = {
             { 0, 1 },{ 1, 2 },{ 1, 3 },{ 2, 3 },{ 4, 5 }
         };
 
@@ -605,9 +460,9 @@ void tests_dynamic_graph()
         using std::placeholders::_1;
         using std::placeholders::_2;
 
-        std::function<void(uint32_t, uint32_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
 
-        std::vector<std::tuple<uint32_t, uint32_t, decltype(add)>> edges = {
+        std::vector<std::tuple<int64_t, int64_t, decltype(add)>> edges = {
             { 4, 5, add },{ 0, 1, add },{ 1, 3, add },{ 2, 3, add },{ 1, 2, add }
         };
 
@@ -641,10 +496,10 @@ void tests_dynamic_graph()
         using std::placeholders::_1;
         using std::placeholders::_2;
 
-        std::function<void(uint32_t, uint32_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
-        std::function<void(uint32_t, uint32_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
 
-        std::vector<std::tuple<uint32_t, uint32_t, decltype(add)>> edges = {
+        std::vector<std::tuple<int64_t, int64_t, decltype(add)>> edges = {
             { 0, 2, add },{ 0, 1, add },{ 1, 2, add },{ 0, 3, rem },
         { 1, 3, add },{ 2, 3, add },{ 1, 5, add },{ 4, 5, add },
         { 1, 5, rem }
@@ -678,10 +533,10 @@ void tests_dynamic_graph()
         using std::placeholders::_1;
         using std::placeholders::_2;
 
-        std::function<void(uint32_t, uint32_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
-        std::function<void(uint32_t, uint32_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
 
-        std::vector<std::tuple<uint32_t, uint32_t, decltype(add)>> edges = {
+        std::vector<std::tuple<int64_t, int64_t, decltype(add)>> edges = {
             { 0, 2, add },{ 0, 1, add },{ 1, 2, add },{ 0, 2, rem },
         { 1, 3, add },{ 2, 3, add },{ 1, 5, add },{ 4, 5, add },
         { 1, 5, rem },{ 0, 1, rem },{ 1, 2, rem },{ 4, 5, rem },
@@ -707,43 +562,141 @@ void tests_dynamic_graph()
 
         std::cout << "True\n";
     }
+
+    // Test 5
+    {
+        std::cout << "Test 5:\n";
+        DynamicGraph g(7);
+
+        using std::placeholders::_1;
+        using std::placeholders::_2;
+
+        std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
+
+        std::vector<std::tuple<int64_t, int64_t, decltype(add)>> edges = {
+            { 0, 1, add },{ 1, 2, add },{ 2, 3, add },{ 3, 4, add },
+            { 1, 3, add },{ 2, 4, add },{ 3, 5, add },{ 4, 6, add },
+            { 0, 1, rem },{ 1, 2, rem },{ 2, 3, rem },{ 3, 4, rem },
+            { 1, 3, rem },{ 2, 4, rem },{ 3, 5, rem },{ 4, 6, rem },
+        };
+
+        for (auto & trio : edges)
+        {
+            auto u = std::get<0>(trio);
+            auto v = std::get<1>(trio);
+            auto comd = std::get<2>(trio);
+
+            comd(u, v);
+        }
+
+        auto result = g.GetComponentsNumber();
+
+        if (result != 7)
+        {
+            std::cout << "Fail\n";
+            return;
+        }
+
+        std::cout << "True\n";
+    }
+
+    // Test 6
+    {
+        std::cout << "Test 6:\n";
+        DynamicGraph g(0);
+
+        auto result = g.GetComponentsNumber();
+
+        std::cout << "Size: " << result << "\n";
+
+        if (result != 0)
+        {
+            std::cout << "Fail\n";
+            return;
+        }
+
+        std::cout << "True\n";
+    }
+
+    // Test 7
+    {
+        std::cout << "Test 7:\n";
+        DynamicGraph g(7);
+
+        using std::placeholders::_1;
+        using std::placeholders::_2;
+
+        std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+        std::function<void(int64_t, int64_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
+
+        std::vector<std::tuple<int64_t, int64_t, decltype(add), std::string>> edges = {
+            { 0, 1, add, "Add" }, { 1, 2, add, "Add" }, { 2, 3, add, "Add" }, { 3, 4, add, "Add" },
+            { 0, 1, rem, "Rem" }, { 1, 2, rem, "Rem" }, { 2, 3, rem, "Rem" }, { 3, 4, rem, "Rem" },
+            { 1, 3, add, "Add" }, { 2, 4, add, "Add" }, { 3, 5, add, "Add" }, { 4, 6, add, "Add" },
+            { 1, 3, rem, "Rem" }, { 2, 4, rem, "Rem" }, { 3, 5, rem, "Rem" }, { 4, 6, rem, "Rem" }
+        };
+
+        for (auto & data : edges)
+        {
+            auto u = std::get<0>(data);
+            auto v = std::get<1>(data);
+            auto comd = std::get<2>(data);
+
+            comd(u, v);
+
+            std::cout << std::get<3>(data) << " (" << u << ", " << v << ")";
+
+            std::cout << " -- Component: " << g.GetComponentsNumber() << "\n";
+        }
+    }
+
+    // Test 8
+    {
+        std::cout << "Test 8: ";
+
+        DynamicGraph g(0);
+
+        if (g.GetComponentsNumber() != 0)
+        {
+            std::cout << "false\n";
+        }
+
+        std::cout << "true\n";
+    }
 }
 
-void speed_test()
+
+void hard_test()
 {
-    std::cout << "Speed test:\n";
-    DynamicGraph g(6);
+    std::cout << "Hard test:\n";
+    DynamicGraph g(7);
 
     using std::placeholders::_1;
     using std::placeholders::_2;
 
-    std::function<void(uint32_t, uint32_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
-    std::function<void(uint32_t, uint32_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
+    std::function<void(int64_t, int64_t)> add = std::bind(&DynamicGraph::AddEdge, &g, _1, _2);
+    std::function<void(int64_t, int64_t)> rem = std::bind(&DynamicGraph::RemoveEdge, &g, _1, _2);
 
-    std::vector<std::tuple<uint32_t, uint32_t, decltype(add)>> edges = {
-        { 0, 2, add },{ 0, 1, add },{ 1, 2, add },{ 0, 2, rem },
-    { 1, 3, add },{ 2, 3, add },{ 1, 5, add },{ 4, 5, add },
-    { 1, 5, rem },{ 0, 1, rem },{ 1, 2, rem },{ 4, 5, rem },
-    { 1, 3, rem },{ 2, 3, rem }
+    std::vector<std::tuple<int64_t, int64_t, decltype(add), std::string>> edges = {
+        { 0, 1, add, "Add" }, { 1, 2, add, "Add" }, { 2, 3, add, "Add" }, { 3, 4, add, "Add" },
+        { 0, 1, rem, "Rem" }, { 1, 2, rem, "Rem" }, { 2, 3, rem, "Rem" }, { 3, 4, rem, "Rem" },
+        { 1, 3, add, "Add" }, { 2, 4, add, "Add" }, { 3, 5, add, "Add" }, { 4, 6, add, "Add" },
+        { 1, 3, rem, "Rem" }, { 2, 4, rem, "Rem" }, { 3, 5, rem, "Rem" }, { 4, 6, rem, "Rem" }
     };
 
-    for (auto & trio : edges)
+    for (auto & data : edges)
     {
-        auto u = std::get<0>(trio);
-        auto v = std::get<1>(trio);
-        auto comd = std::get<2>(trio);
+        auto u = std::get<0>(data);
+        auto v = std::get<1>(data);
+        auto comd = std::get<2>(data);
 
         comd(u, v);
+
+        auto result = g.GetComponentsNumber();
+
+        std::cout << std::get<3>(data) << " (" << u << ", " << v << ")";
+
+        std::cout << " -- Component: " << result << "\n";
     }
-
-    auto result = g.GetComponentsNumber();
-
-    if (result != 6)
-    {
-        std::cout << "Fail\n";
-        return;
-    }
-
-    std::cout << "True\n";
 }
-
