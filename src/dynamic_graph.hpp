@@ -573,6 +573,9 @@ public:
     {
         if (u > v) std::swap(u, v);
 
+        u--;
+        v--;
+
         int64_t edge_number = u * m_vertex_count + v;
 
         for (auto i = 0; i < m_sketch_count; ++i)
@@ -585,6 +588,9 @@ public:
     void RemoveEdge(int64_t u, int64_t v)
     {
         if (u > v) std::swap(u, v);
+
+        u--;
+        v--;
 
         int64_t edge_number = u * m_vertex_count + v;
 

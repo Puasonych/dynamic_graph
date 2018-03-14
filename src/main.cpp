@@ -15,23 +15,67 @@ void tests_main_vector();
 // tests DynamicGraph
 void tests_dynamic_graph();
 void hard_test();
+void simple_test();
 
 int main()
 {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
+    // std::ios::sync_with_stdio(false);
+    // std::cin.tie(nullptr);
 
     // tests l0sample
-    tests_fast_pow();
-    tests_one_sparse_vector();
-    tests_s_sparse_vector();
-    tests_main_vector();
+    // tests_fast_pow();
+    // tests_one_sparse_vector();
+    // tests_s_sparse_vector();
+    // tests_main_vector();
 
     // tests DynamicGraph
-    tests_dynamic_graph();
-    hard_test();
+    // tests_dynamic_graph();
+    // hard_test(); 
+    simple_test();
 
     return 0;
+}
+
+void simple_test()
+{
+    std::cout << "Simple test: \n";
+
+    int64_t vertex_count, count_req;
+
+    std::cin >> vertex_count;
+    std::cin >> count_req;
+
+    DynamicGraph g(vertex_count);
+
+    for (int64_t i = 0; i < count_req; ++i)
+    {
+        char operation;
+        std::cin >> operation;
+
+        if (operation == '+')
+        {
+            int64_t u, v;
+
+            std::cin >> u;
+            std::cin >> v;
+
+            g.AddEdge(u, v);
+        }
+        else if (operation == '-')
+        {
+            int64_t u, v;
+
+            std::cin >> u;
+            std::cin >> v;
+
+            g.RemoveEdge(u, v);
+        }
+        else
+        {
+            std::cout << g.GetComponentsNumber() << "\n";
+        }
+    }
+    
 }
 
 void tests_fast_pow()
